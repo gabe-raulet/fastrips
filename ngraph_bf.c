@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <assert.h>
 #include <math.h>
+#include "vec.h"
 
 /*
  * File:     ngraph_bf.c
@@ -12,7 +13,11 @@
  * Purpose:  Construct the neighborhood graph of a point cloud at a given scale.
  */
 
+typedef struct { size_t u, v; } edge_t;
+
 double* read_points(const char *fname, size_t *npoints, int *dim);
+double dist(const double *x, const double *y, int dim);
+edge_t* neighborhood_graph_tuples(const double *points, size_t npoints, int dim, double scale, size_t *nedges);
 
 int main(int argc, char *argv[])
 {
@@ -25,22 +30,20 @@ int main(int argc, char *argv[])
     double scale = atof(argv[1]);
     const char *fname = argv[2];
 
-    size_t n;
     int k;
+    size_t n, m;
+    double *points;
+    edge_t *es;
 
-    double *points = read_points(fname, &n, &k);
+    points = read_points(fname, &n, &k);
+    es = neighborhood_graph_tuples(points, n, k, scale, &m);
 
-    printf("num points = %lu\n", n);
-    printf("dimensions = %d\n", k);
-
-    for (size_t i = 0; i < n; ++i)
+    for (size_t i = 0; i < m; ++i)
     {
-        for (int j = 0; j < k; ++j)
-            printf("%.5f\t", points[i*k + j]);
-
-        printf("\n");
+        printf("%lu\t%lu\n", es[i].u+1, es[i].v+1);
     }
 
+    free(es);
     free(points);
 
     return 0;
@@ -75,4 +78,36 @@ double* read_points(const char *fname, size_t *npoints, int *dim)
     fclose(f);
 
     return points;
+}
+
+double dist(const double *x, const double *y, int dim)
+{
+    double v = 0., a;
+
+    for (int i = 0; i < dim; ++i)
+    {
+        a = x[i] - y[i];
+        v += a*a;
+    }
+
+    return sqrt(v);
+}
+
+edge_t* neighborhood_graph_tuples(const double *points, size_t npoints, int dim, double scale, size_t *nedges)
+{
+    /* brute force solution */
+
+    vec_t(edge_t) es;
+    vec_init(es);
+
+    for (size_t v = 0; v < npoints; ++v)
+        for (size_t u = 0; u < v; ++u)
+            if (dist(&points[u*dim], &points[v*dim], dim) <= scale)
+            {
+                edge_t *e = vec_pushp(es);
+                e->u = u, e->v = v;
+            }
+
+    *nedges = vec_size(es);
+    return vec_release(es);
 }

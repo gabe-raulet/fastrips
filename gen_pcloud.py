@@ -13,7 +13,7 @@ def main(npoints, ndims):
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:
-        sys.stderr.write("Usage: {} [npoints] [ndims]\n".format(sys.argv[0]))
+        sys.stderr.write("Usage: {} <npoints> <ndims>\n".format(sys.argv[0]))
         sys.stderr.flush()
         sys.exit(-1)
     npoints = int(sys.argv[1])
